@@ -5,18 +5,19 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.8;
 
-import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
+import "./PriceConverter.sol";
 
-contract FundMe {
+contract FundMe{
+    using PriceConverter for uint256;
 
-    uint public minUsd;
+    uint public minUsd = 50 * 1e18;
     address payable owner;
-    AggregatorV3Interface internal priceFeed;
+    
+    address[] public funders;
+    mapping(address=>uint256) public addressToAmountFunded;
 
     constructor(){
         owner = payable(msg.sender);
-        priceFeed = AggregatorV3Interface(0x694AA1769357215DE4FAC081bf1f309aDC325306);
-        minUsd = 50 * 1e18;
     }
 
     modifier onlyOwner(){
@@ -31,26 +32,16 @@ contract FundMe {
     function fund() public payable {
         // Want to be able to set a minimum fund amount in USD
         // msg.value is in wei we have to convert eth usd value to wei as well
-        require(msg.value > requiredEth(), "Didn't send enough");
-    }
-
-    function getEthPrice() public view returns(uint256) {
-        (,int price,,,) = priceFeed.latestRoundData();
-        uint8 decimals = priceFeed.decimals();
-        return uint(price)*(10**(18-decimals));
-    }
-
-    function requiredEth() internal view returns(uint){
-        uint ethPrice = getEthPrice();
-        return minUsd / ethPrice;
+        require(msg.value >= minUsd.requiredEth(), "Didn't send enough");
+        funders.push(msg.sender);
+        addressToAmountFunded[msg.sender] = msg.value;
     }
 
     function setMinUsd(uint _minUsd) external onlyOwner {
-        minUsd = _minUsd;
+        minUsd = _minUsd * 1e18;
     }
-    
 
-    // function withdraw() public {
-
-    // }
+    function withdraw() public onlyOwner {
+        owner.transfer(address(this).balance);
+    }
 }
