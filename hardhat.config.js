@@ -1,5 +1,9 @@
 require("hardhat-deploy")
-// require("dotenv").config()
+require("dotenv").config()
+require("@nomiclabs/hardhat-etherscan")
+
+const ETHERSCAN_API_KEY = process.env.ETHERSCAN_API_KEY
+const COINMARKETCAP_API_KEY = process.env.COINMARKETCAP_API_KEY
 
 /** @type import('hardhat/config').HardhatUserConfig */
 module.exports = {
@@ -22,10 +26,21 @@ module.exports = {
             blockConfirmations: 6,
         },
     },
+    etherscan: {
+        apiKey: ETHERSCAN_API_KEY,
+        // customChains: [], // uncomment this line if you are getting a TypeError: customChains is not iterable
+    },
     namedAccounts: {
         deployer: {
             default: 0, // here this will by default take the first account as deployer
             1: 0, // similarly on mainnet it will take the first account as deployer. Note though that depending on how hardhat network are configured, the account 0 on one network can be different than on another
         },
+    },
+    gasReporter: {
+        enabled: true,
+        currency: "USD",
+        outputFile: "gas-report.txt",
+        noColors: true,
+        coinmarketcap: COINMARKETCAP_API_KEY,
     },
 }
