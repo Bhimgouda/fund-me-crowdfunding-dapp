@@ -1,0 +1,41 @@
+{
+  "language": "Solidity",
+  "sources": {
+    "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol": {
+      "content": "// SPDX-License-Identifier: MIT\npragma solidity ^0.8.0;\n\ninterface AggregatorV3Interface {\n  function decimals() external view returns (uint8);\n\n  function description() external view returns (string memory);\n\n  function version() external view returns (uint256);\n\n  // getRoundData and latestRoundData should both raise \"No data present\"\n  // if they do not have data to report, instead of returning unset values\n  // which could be misinterpreted as actual reported values.\n  function getRoundData(uint80 _roundId)\n    external\n    view\n    returns (\n      uint80 roundId,\n      int256 answer,\n      uint256 startedAt,\n      uint256 updatedAt,\n      uint80 answeredInRound\n    );\n\n  function latestRoundData()\n    external\n    view\n    returns (\n      uint80 roundId,\n      int256 answer,\n      uint256 startedAt,\n      uint256 updatedAt,\n      uint80 answeredInRound\n    );\n}\n"
+    },
+    "contracts/fundMe.sol": {
+      "content": "// Get funds from users\r\n// Withdraw funds\r\n// Set a minimum funding value in USD\r\n\r\n// SPDX-License-Identifier: MIT\r\npragma solidity ^0.8.8;\r\n\r\nimport \"./PriceConverter.sol\";\r\n\r\ncontract FundMe {\r\n    using PriceConverter for uint256;\r\n\r\n    uint public minUsd = 50 * 1e18;\r\n    address payable private owner;\r\n\r\n    address[] public funders;\r\n    mapping(address => uint256) public addressToAmountFunded;\r\n\r\n    AggregatorV3Interface public priceFeed;\r\n\r\n    constructor(address priceFeedAddress) {\r\n        owner = payable(msg.sender);\r\n        priceFeed = AggregatorV3Interface(priceFeedAddress);\r\n    }\r\n\r\n    modifier onlyOwner() {\r\n        require(msg.sender == owner);\r\n        _;\r\n    }\r\n\r\n    // Here we want minimum 50 usd but the users will send the value in ether\r\n    // Now we have to know how much ether === 50 usd, and ether's price keeps changing every second in the market\r\n    // Here we use chainlink's price feed to get real time value of ether in terms of usd (ether/usd)\r\n\r\n    function fund() public payable {\r\n        // Want to be able to set a minimum fund amount in USD\r\n        // msg.value is in wei we have to convert eth usd value to wei as well\r\n        require(\r\n            msg.value >= minUsd.requiredEth(priceFeed),\r\n            \"Didn't send enough\"\r\n        );\r\n        funders.push(msg.sender);\r\n        addressToAmountFunded[msg.sender] = msg.value;\r\n    }\r\n\r\n    function setMinUsd(uint _minUsd) external onlyOwner {\r\n        minUsd = _minUsd * 1e18;\r\n    }\r\n\r\n    function withdraw() public onlyOwner {\r\n        owner.transfer(address(this).balance);\r\n    }\r\n}\r\n"
+    },
+    "contracts/PriceConverter.sol": {
+      "content": "// SPDX-License-Identifier: MIT\r\npragma solidity ^0.8.8;\r\n\r\nimport \"@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol\";\r\n\r\n// This is just a library without any state variable's and just has some useful functions, that we can use in our main contract\r\n\r\nlibrary PriceConverter {\r\n    function getEthPrice(\r\n        AggregatorV3Interface priceFeed\r\n    ) internal view returns (uint256) {\r\n        // Instatiating a smart contract\r\n        (, int price, , , ) = priceFeed.latestRoundData();\r\n        uint8 decimals = priceFeed.decimals();\r\n        return uint(price) * (10 ** (18 - decimals));\r\n    }\r\n\r\n    function requiredEth(\r\n        uint _minUsd,\r\n        AggregatorV3Interface priceFeed\r\n    ) internal view returns (uint) {\r\n        return (_minUsd * 1e18) / getEthPrice(priceFeed);\r\n    }\r\n}\r\n"
+    }
+  },
+  "settings": {
+    "optimizer": {
+      "enabled": false,
+      "runs": 200
+    },
+    "outputSelection": {
+      "*": {
+        "*": [
+          "abi",
+          "evm.bytecode",
+          "evm.deployedBytecode",
+          "evm.methodIdentifiers",
+          "metadata",
+          "devdoc",
+          "userdoc",
+          "storageLayout",
+          "evm.gasEstimates"
+        ],
+        "": [
+          "ast"
+        ]
+      }
+    },
+    "metadata": {
+      "useLiteralContent": true
+    }
+  }
+}
