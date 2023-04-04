@@ -17,6 +17,17 @@ error FundMe__NotOwner(); // Following the error naming convention
  * @dev This implements price feeds as our library
  */
 
+struct Funder {
+    address funderAddress;
+    uint amountFunded;
+    string timeStamp;
+}
+
+struct Withdraw {
+    uint withdrawAmount;
+    string timeStamp;
+}
+
 contract FundMe {
     // Type Declarations
     using PriceConverter for uint256;
@@ -24,11 +35,15 @@ contract FundMe {
     // State Variables
     uint public s_minUsd = 50 * 1e18;
     address payable private immutable i_owner;
-    address[] private s_funders;
-    mapping(address => uint256) private s_addressToAmountFunded;
     AggregatorV3Interface private s_priceFeed;
+    Funder[] private s_funders;
+    Withdraw[] private s_withdraws;
 
     // Events and Modifiers
+
+    event FundingSuccessful(address funderAddress, uint funderAmount);
+    event WithdrawSuccessful(address withdrawAddress, uint withdrawAmount);
+
     modifier onlyOwner() {
         // require(msg.sender == i_owner); (We are using if for sending custom error)
         if (msg.sender != i_owner) revert FundMe__NotOwner();
@@ -41,11 +56,11 @@ contract FundMe {
     }
 
     receive() external payable {
-        fund();
+        fund("");
     }
 
     fallback() external payable {
-        fund();
+        fund("");
     }
 
     function setMinUsd(uint _minUsd) external onlyOwner {
@@ -56,7 +71,7 @@ contract FundMe {
      * @notice This function funds this contract
      * @dev This implements price feeds as our library
      */
-    function fund() public payable {
+    function fund(string memory timeStamp) public payable {
         // Here we want minimum 50 usd but the users will send the value in ether
         // Now we have to know how much ether === 50 usd, and ether's price keeps changing every second in the market
         // Here we use chainlink's price feed to get real time value of ether in terms of usd (ether/usd)
@@ -66,12 +81,16 @@ contract FundMe {
             msg.value >= s_minUsd.requiredEth(s_priceFeed),
             "Didn't send enough"
         );
-        s_funders.push(msg.sender);
-        s_addressToAmountFunded[msg.sender] = msg.value;
+        Funder memory funder = Funder(msg.sender, msg.value, timeStamp);
+        s_funders.push(funder);
+        emit FundingSuccessful(msg.sender, msg.value);
     }
 
-    function withdraw() public onlyOwner {
-        i_owner.transfer(address(this).balance);
+    function withdraw(string memory timeStamp) public onlyOwner {
+        uint contractBalance = address(this).balance;
+        i_owner.transfer(contractBalance);
+        s_withdraws.push(Withdraw(contractBalance, timeStamp));
+        emit WithdrawSuccessful(i_owner, contractBalance);
     }
 
     // We changed every state variable to private
@@ -85,14 +104,16 @@ contract FundMe {
         return i_owner;
     }
 
-    function getFunder(uint256 index) public view returns (address) {
+    function getFunder(uint256 index) public view returns (Funder memory) {
         return s_funders[index];
     }
 
-    function getAddressToAmountFunded(
-        address funder
-    ) public view returns (uint256) {
-        return s_addressToAmountFunded[funder];
+    function getAllFunders() public view returns (Funder[] memory) {
+        return s_funders;
+    }
+
+    function getAllWithdraws() public view returns (Withdraw[] memory) {
+        return s_withdraws;
     }
 
     function getPriceFeed() public view returns (AggregatorV3Interface) {

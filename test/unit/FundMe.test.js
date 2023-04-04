@@ -32,6 +32,10 @@ const {
           })
 
           describe("fund", async function () {
+              beforeEach(async function () {
+                  await fundMe.fund({ value: sendValue })
+              })
+
               it("Fails if you don't send enough ETH", async () => {
                   // This fails and breaks but waffle overwrites chai and the test passes/Because we want it to fail
                   await expect(fundMe.fund()).to.be.revertedWith(
@@ -39,19 +43,18 @@ const {
                   )
               })
 
-              it("updates the sender's list", async function () {
-                  await fundMe.fund({ value: sendValue })
+              it("To get all the funders", async function () {
+                  await fundMe.getAllFunders()
 
-                  const response = await fundMe.getAddressToAmountFunded(
-                      deployer
-                  )
-                  assert.equal(response.toString(), sendValue.toString())
+                  const response = await fundMe.getAllFunders()
+
+                  assert.equal(response.length, 1)
               })
 
               it("Adds funder to array of getFunder", async function () {
                   await fundMe.fund({ value: sendValue })
                   const funder = await fundMe.getFunder(0) // Adding optional index
-                  assert.equal(funder, deployer)
+                  assert.equal(funder.funderAddress, deployer)
               })
           })
 
