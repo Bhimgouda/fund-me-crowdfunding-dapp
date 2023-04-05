@@ -5,9 +5,9 @@ const newtorkConfig = {
     },
 }
 
-const developementChains = [31337]
+const developmentChains = [31337]
 
 module.exports = {
     newtorkConfig,
-    developementChains,
+    developmentChains,
 }

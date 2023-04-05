@@ -1,4 +1,4 @@
-const { developementChains } = require("../helper-hardhat-config")
+const { developmentChains } = require("../helper-hardhat-config")
 
 const DECIMALS = "8"
 const INITIAL_PRICE = "200000000000" // 2000
@@ -9,7 +9,7 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
     const chainId = network.config.chainId
 
     // If we are on a local development network, we need to deploy mocks!
-    if (developementChains.includes(chainId)) {
+    if (developmentChains.includes(chainId)) {
         log("Local network detected! Deploying mocks...")
         await deploy("MockV3Aggregator", {
             contract: "MockV3Aggregator",

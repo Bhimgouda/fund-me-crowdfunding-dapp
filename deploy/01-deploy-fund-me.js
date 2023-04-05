@@ -1,9 +1,5 @@
-const {
-    networkConfig,
-    developementChains,
-    newtorkConfig,
-} = require("../helper-hardhat-config")
-const { network } = require("hardhat")
+const { developmentChains, newtorkConfig } = require("../helper-hardhat-config")
+const { network, ethers } = require("hardhat")
 const { verify } = require("../utils/verify")
 
 // hre = hardhat runtime environment
@@ -12,9 +8,9 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
     const { deployer } = await getNamedAccounts()
     const chainId = network.config.chainId
 
-    let ethUsdPriceFeed
+    let ethUsdPriceFeedAddress
 
-    if (developementChains.includes(chainId)) {
+    if (developmentChains.includes(chainId)) {
         // Getting the most recent deployments with contrat name
         // Getting the mock contract that we just deployed
         const ethUsdAggregator = await get("MockV3Aggregator")
@@ -25,6 +21,7 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
 
     const args = [ethUsdPriceFeedAddress]
 
+    // Deploying
     const fundMe = await deploy("FundMe", {
         from: deployer,
         args: args,
@@ -34,7 +31,7 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
     log("-----------------------------------")
 
     // Auto verify of deployed smart contracts on mainnet and test-net
-    if (!developementChains.includes(chainId)) {
+    if (!developmentChains.includes(chainId)) {
         await verify(fundMe.address, args)
     }
 }

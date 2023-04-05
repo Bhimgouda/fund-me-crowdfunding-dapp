@@ -1,4 +1,6 @@
 {
+  "name": "hardhat-fund-me",
+  "author":"Bhimgouda Patil",
   "devDependencies": {
     "@nomiclabs/hardhat-ethers": "npm:hardhat-deploy-ethers@^0.3.0-beta.13",
     "@nomiclabs/hardhat-etherscan": "^3.0.0",
@@ -14,5 +16,13 @@
     "dotenv": "^14.2.0",
     "prettier-plugin-solidity": "^1.0.0-beta.19",
     "solhint": "^3.3.7"
+  },
+  "scripts": {
+    "test": "hardhat test",
+    "test:staging": "hardhat test --network sepolia",
+    "lint": "solhint 'contracts/**/*.sol'",
+    "lint:fix": "solhint 'contracts/**/*.sol' --fix",
+    "format": "prettier --write .",
+    "coverage": "hardhat coverage"
   }
 }
